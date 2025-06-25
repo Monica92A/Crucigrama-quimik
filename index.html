@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crucigrama Químico: Descubre los Elementos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos CSS incrustados */
+        :root {
+            /* Colores del juego */
+            --color-background: #F0F0F0; /* Gris claro de fondo */
+            --color-text-dark: #333333; /* Texto oscuro */
+            --color-text-light: #FFFFFF; /* Texto blanco */
+            --color-grid-empty: #FFFFFF; /* Casilla vacía */
+            --color-grid-correct: #2ECC71; /* Verde Esmeralda */
+            --color-grid-incorrect: #D50000; /* Rojo Rubí */
+            --color-clue-number: #1A237E; /* Azul profundo para números de pista */
+            --color-score-board: #4CAF50; /* Verde para el marcador */
+            --color-button: #673AB7; /* Morado para botones */
+            --color-button-hover: #5E35B1; /* Morado más oscuro al pasar el ratón */
+            --color-feedback-correct: #28a745; /* Retroalimentación correcta */
+            --color-feedback-incorrect: #dc3545; /* Retroalimentación incorrecta */
+            --color-reward-bg: #FFEB3B; /* Amarillo para recompensas */
+            --color-reward-text: #E65100; /* Naranja para texto de recompensa */
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinea al inicio para dejar espacio para el scroll */
+            min-height: 100vh;
+            margin: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            color: var(--color-button);
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .instructions {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: var(--color-text-dark);
+        }
+
+        .score-board {
+            background-color: var(--color-score-board);
+            color: var(--color-text-light);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            display: inline-block; /* Ajusta el ancho al contenido */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .crossword-grid {
+            display: grid;
+            gap: 2px; /* Espacio entre las celdas */
+            margin: 30px auto;
+            border: 2px solid var(--color-text-dark);
+            max-width: 500px; /* Limita el tamaño de la cuadrícula */
+        }
+
+        .grid-cell {
+            width: 40px; /* Tamaño de cada celda */
+            height: 40px;
+            background-color: var(--color-grid-empty);
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--color-text-dark);
+            position: relative;
+        }
+
+        .grid-cell input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            background-color: transparent;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-transform: uppercase; /* Para que el input sea mayúscula automáticamente */
+            color: var(--color-text-dark);
+            outline: none;
+        }
+
+        .grid-cell.correct {
+            background-color: var(--color-grid-correct);
+            color: var(--color-text-light); /* Texto blanco para mejor contraste */
+            animation: correctFlash 0.5s ease-out;
+        }
+
+        .grid-cell.incorrect {
+            background-color: var(--color-grid-incorrect);
+            color: var(--color-text-light); /* Texto blanco para mejor contraste */
+            animation: incorrectShake 0.3s ease-out;
+        }
+
+        .clue-number {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 0.6em;
+            color: var(--color-clue-number);
+            font-weight: bold;
+        }
+
+        .clues-container {
+            text-align: left;
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 20px;
+        }
+
+        .clues-container h2 {
+            font-family: 'Fredoka One', cursive;
+            color: var(--color-button);
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            width: 100%; /* Para que los títulos ocupen todo el ancho */
+            text-align: center;
+        }
+
+        .clues-container ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex: 1; /* Para que ocupen espacio equitativo */
+            min-width: 300px; /* Ancho mínimo para columnas */
+        }
+
+        .clues-container li {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+            line-height: 1.4;
+            cursor: pointer; /* Indica que son clickeables */
+            transition: background-color 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .clues-container li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .clues-container li.active-clue {
+            background-color: var(--color-clue-number);
+            color: var(--color-text-light);
+            font-weight: bold;
+        }
+
+        .feedback-message {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+            min-height: 40px; /* Para mantener el espacio */
+        }
+
+        .feedback-message.correct-feedback {
+            background-color: var(--color-feedback-correct);
+            color: var(--color-text-light);
+        }
+
+        .feedback-message.incorrect-feedback {
+            background-color: var(--color-feedback-incorrect);
+            color: var(--color-text-light);
+        }
+
+        .reward-message {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.4em;
+            background-color: var(--color-reward-bg);
+            color: var(--color-reward-text);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            min-height: 60px; /* Para mantener el espacio */
+            display: none; /* Se mostrará con JavaScript */
+            animation: bounceIn 0.8s ease-out;
+        }
+
+        /* Animaciones */
+        @keyframes correctFlash {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes incorrectShake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.1); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Crucigrama Químico: ¡Descubre los Elementos!</h1>
+        <p class="instructions">
+            ¡Hola, futuro/a químico/a! Observa la pista visual, identifica el elemento y escribe su símbolo. ¡Mucha suerte!
+            <br>La primera letra es **MAYÚSCULA**, la segunda (si existe) **minúscula**.
+        </p>
+
+        <div class="score-board">
+            Puntuación: <span id="score">0</span>
+        </div>
+
+        <div class="crossword-grid" id="crosswordGrid">
+            </div>
+
+        <div class="clues-container">
+            <h2>Pistas Horizontales</h2>
+            <ul id="horizontalClues"></ul>
+            <h2>Pistas Verticales</h2>
+            <ul id="verticalClues"></ul>
+        </div>
+
+        <div id="feedback" class="feedback-message"></div>
+        <div id="reward" class="reward-message"></div>
+    </div>
+
+    <script>
+        /* Lógica JavaScript incrustada */
+        document.addEventListener('DOMContentLoaded', () => {
+            const crosswordGridElement = document.getElementById('crosswordGrid');
+            const horizontalCluesElement = document.getElementById('horizontalClues');
+            const verticalCluesElement = document.getElementById('verticalClues');
+            const scoreElement = document.getElementById('score');
+            const feedbackElement = document.getElementById('feedback');
+            const rewardElement = document.getElementById('reward');
+
+            let score = 0;
+            let correctAnswersCount = 0;
+            const totalElements = 12; // Número total de elementos en el crucigrama
+
+            // --- Definición del Crucigrama ---
+            // Cada palabra es un objeto: { word: "SIMBOLO", clue: "Texto de la pista", image: "URL_IMAGEN", startRow: X, startCol: Y }
+            // Las coordenadas (startRow, startCol) son 0-indexadas
+            const crosswordData = {
+                gridSize: { rows: 15, cols: 15 }, // Ajusta el tamaño de la cuadrícula según tus palabras
+                words: [
+                    // Horizontales
+                    { word: "H", clue: "Es el elemento más ligero y abundante del universo, un componente clave del agua y el combustible de los cohetes. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/0000FF/FFFFFF?text=Cohete", startRow: 0, startCol: 0, direction: "horizontal", number: 1 },
+                    { word: "O", clue: "Vital para nuestra respiración y la combustión, este gas es fundamental para la vida en la Tierra. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/00FF00/FFFFFF?text=Buceador", startRow: 3, startCol: 4, direction: "horizontal", number: 3 },
+                    { word: "C", clue: "La base de toda la vida orgánica, presente en diamantes, grafito y todos los seres vivos. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/FF0000/FFFFFF?text=Diamante", startRow: 5, startCol: 0, direction: "horizontal", number: 5 },
+                    { word: "NA", clue: "Este metal alcalino es un componente principal de la sal de mesa y es esencial para el equilibrio de líquidos en nuestro cuerpo. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/FFFF00/000000?text=Salero", startRow: 7, startCol: 0, direction: "horizontal", number: 7 },
+                    { word: "FE", clue: "Un metal fuerte y magnético, esencial en la construcción y un componente vital de nuestra sangre. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/00FFFF/000000?text=Viga", startRow: 9, startCol: 0, direction: "horizontal", number: 9 },
+                    { word: "K", clue: "Un electrolito crucial para el funcionamiento de los músculos y nervios, muy abundante en frutas como el plátano. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/FF00FF/FFFFFF?text=Platano", startRow: 11, startCol: 0, direction: "horizontal", number: 11 },
+
+                    // Verticales
+                    { word: "HE", clue: "Este gas noble es inerte, muy ligero y se usa para inflar globos y para la criogenia. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/FFA500/FFFFFF?text=Globo", startRow: 0, startCol: 1, direction: "vertical", number: 2 },
+                    { word: "N", clue: "El gas más abundante en nuestra atmósfera, esencial para el crecimiento de las plantas y la formación de proteínas. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/A52A2A/FFFFFF?text=Rayo", startRow: 3, startCol: 4, direction: "vertical", number: 4 }, // N coincide con O
+                    { word: "CL", clue: "Utilizado para desinfectar el agua de piscinas y como blanqueador, este halógeno es un gas verdoso tóxico. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/800080/FFFFFF?text=Piscina", startRow: 6, startCol: 3, direction: "vertical", number: 6 },
+                    { word: "CA", clue: "Es un mineral esencial para huesos y dientes fuertes, muy abundante en productos lácteos. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/008080/FFFFFF?text=Leche", startRow: 8, startCol: 4, direction: "vertical", number: 8 }, // CA coincide con Fe
+                    { word: "AU", clue: "Un metal precioso, brillante y maleable, muy valorado en joyería y como inversión económica. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/FFD700/000000?text=Oro", startRow: 13, startCol: 3, direction: "vertical", number: 10 },
+                    { word: "AG", clue: "Este metal precioso es el mejor conductor de electricidad y calor, usado en joyería y fotografía. ¿Cuál es su símbolo?", image: "https://via.placeholder.com/80x80/C0C0C0/000000?text=Monedas", startRow: 11, startCol: 5, direction: "vertical", number: 12 } // AG coincide con K
+                ]
+            };
+
+            // --- Pistas y Retroalimentación ---
+            const feedbackMessages = {
+                H: "Piensa en el primer elemento de la tabla periódica, crucial para la vida y presente en grandes cantidades en el espacio.",
+                O: "Es un gas que inhalamos y que permite que las cosas ardan. Su número atómico es 8.",
+                C: "Es el cuarto elemento más abundante en el universo y la base de la química orgánica.",
+                NA: "Lo usamos para dar sabor a nuestra comida. ¿Recuerdas su símbolo que viene del latín 'natrium'?",
+                FE: "Es un metal muy común en la construcción y también lo encontramos en nuestros glóbulos rojos. Su símbolo viene de 'ferrum'.",
+                K: "Otro metal alcalino, similar al sodio, importante para la salud y que se encuentra en muchas frutas. Su símbolo viene de 'kalium'.",
+                HE: "Es el segundo elemento más ligero y un gas noble, famoso por hacer que los globos floten.",
+                N: "Es el gas principal que respiramos (aproximadamente el 78% del aire) y es vital para la vida vegetal.",
+                CL: "Este elemento se utiliza para purificar el agua, ¡pero ten cuidado, es un gas irritante! Su símbolo viene del griego 'chloros'.",
+                CA: "Un metal alcalinotérreo, crucial para la salud de nuestros huesos y dientes. ¿Qué alimento nos ayuda a obtenerlo?",
+                AU: "Es un metal noble, muy valioso y usado en la fabricación de joyas. Su símbolo viene de 'aurum'.",
+                AG: "Es un metal blanco, brillante, muy buen conductor, y su símbolo viene de 'argentum'."
+            };
+
+            const rewards = {
+                50: "¡Asombroso! Estás demostrando tu increíble habilidad con los elementos. ¡Sigue así, la meta está cerca!",
+                100: "¡FELICIDADES! ¡Has desbloqueado el prestigioso título de 'Maestro/a de los Elementos'! Has demostrado un conocimiento excepcional de la tabla periódica.",
+                noErrors: "¡ERES UN/A GENIO DE LA QUÍMICA! ¡Dominio total de los elementos! ¡Simplemente IMPRESIONANTE!"
+            };
+
+            let wordStatus = new Map(); // Para rastrear si una palabra ya fue respondida correctamente. {word: {answered: false, attempts: 0}}
+            crosswordData.words.forEach(w => {
+                wordStatus.set(w.word, { answered: false, attempts: 0 });
+            });
+
+            // --- Funciones del Juego ---
+
+            function createGrid() {
+                crosswordGridElement.style.gridTemplateColumns = `repeat(${crosswordData.gridSize.cols}, 1fr)`;
+                crosswordGridElement.style.gridTemplateRows = `repeat(${crosswordData.gridSize.rows}, 1fr)`;
+
+                for (let r = 0; r < crosswordData.gridSize.rows; r++) {
+                    for (let c = 0; c < crosswordData.gridSize.cols; c++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('grid-cell');
+                        cell.dataset.row = r;
+                        cell.dataset.col = c;
+                        crosswordGridElement.appendChild(cell);
+                    }
+                }
+
+                placeWordsOnGrid();
+            }
+
+            function getCell(row, col) {
+                return crosswordGridElement.querySelector(`[data-row='${row}'][data-col='${col}']`);
+            }
+
+            function placeWordsOnGrid() {
+                crosswordData.words.forEach(wordObj => {
+                    const word = wordObj.word;
+                    let currentRow = wordObj.startRow;
+                    let currentCol = wordObj.startCol;
+
+                    for (let i = 0; i < word.length; i++) {
+                        const cell = getCell(currentRow, currentCol);
+                        if (cell) {
+                            // Si ya tiene un input, no crees otro, solo asocia la palabra
+                            if (!cell.querySelector('input')) {
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.maxLength = 1;
+                                input.dataset.wordId = wordObj.number; // Asocia el input a la palabra de la pista
+                                input.dataset.charIndex = i; // Índice del caracter en la palabra
+                                input.addEventListener('input', handleInputChange);
+                                input.addEventListener('focus', () => highlightClue(wordObj)); // Resalta pista al enfocar
+                                input.addEventListener('blur', clearHighlightClues); // Limpia al desenfocar
+                                cell.appendChild(input);
+                            } else {
+                                // Si la celda ya tiene un input (intersección), asegúrate de que esté marcado correctamente
+                                const existingInput = cell.querySelector('input');
+                                const existingWordIds = existingInput.dataset.wordId.split(',').map(Number);
+                                if (!existingWordIds.includes(wordObj.number)) {
+                                    existingInput.dataset.wordId += `,${wordObj.number}`; // Agrega el ID de la palabra
+                                }
+                            }
+
+                            // Coloca el número de la pista solo en la primera letra de la palabra
+                            if (i === 0) {
+                                const clueNumberSpan = document.createElement('span');
+                                clueNumberSpan.classList.add('clue-number');
+                                clueNumberSpan.textContent = wordObj.number;
+                                cell.appendChild(clueNumberSpan);
+                            }
+                        }
+
+                        if (wordObj.direction === "horizontal") {
+                            currentCol++;
+                        } else {
+                            currentRow++;
+                        }
+                    }
+                });
+            }
+
+            function displayClues() {
+                crosswordData.words.forEach(wordObj => {
+                    const clueItem = document.createElement('li');
+                    clueItem.dataset.wordNumber = wordObj.number;
+                    clueItem.innerHTML = `<img src="${wordObj.image}" alt="Pista visual para ${wordObj.word}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px; margin-right: 10px; vertical-align: middle;">
+                                          <strong>${wordObj.number}.</strong> ${wordObj.clue}`;
+                    clueItem.addEventListener('click', () => {
+                        highlightClue(wordObj);
+                        focusWord(wordObj);
+                    });
+
+                    if (wordObj.direction === "horizontal") {
+                        horizontalCluesElement.appendChild(clueItem);
+                    } else {
+                        verticalCluesElement.appendChild(clueItem);
+                    }
+                });
+            }
+
+            function handleInputChange(event) {
+                const input = event.target;
+                const enteredChar = input.value.toUpperCase(); // Convertir a mayúscula
+                
+                // Limpiar cualquier feedback anterior
+                feedbackElement.textContent = '';
+                feedbackElement.className = 'feedback-message';
+
+                // Mover el foco al siguiente input automáticamente (si no es el último)
+                const currentRow = parseInt(input.closest('.grid-cell').dataset.row);
+                const currentCol = parseInt(input.closest('.grid-cell').dataset.col);
+                
+                const wordIdsAssociated = input.dataset.wordId.split(',').map(Number);
+                // Si el usuario está rellenando una palabra horizontal o vertical predominante
+                // Vamos a intentar inferir la dirección para el auto-avance
+                let nextInput = null;
+                
+                // Priorizar el avance horizontal si es parte de una palabra horizontal
+                if (wordIdsAssociated.some(id => crosswordData.words.find(w => w.number === id && w.direction === 'horizontal'))) {
+                    nextInput = getCell(currentRow, currentCol + 1)?.querySelector('input');
+                }
+                // Si no hay avance horizontal o no es una palabra horizontal, intentar vertical
+                if (!nextInput && wordIdsAssociated.some(id => crosswordData.words.find(w => w.number === id && w.direction === 'vertical'))) {
+                    nextInput = getCell(currentRow + 1, currentCol)?.querySelector('input');
+                }
+
+                if (nextInput && enteredChar !== '') {
+                    nextInput.focus();
+                }
+
+                // Comprobar la palabra asociada a este input (o todas si es una intersección)
+                wordIdsAssociated.forEach(id => {
+                    const wordObj = crosswordData.words.find(w => w.number === id);
+                    if (wordObj && !wordStatus.get(wordObj.word).answered) {
+                        checkWord(wordObj);
+                    }
+                });
+            }
+
+            function checkWord(wordObj) {
+                let currentWordEntered = "";
+                let currentRow = wordObj.startRow;
+                let currentCol = wordObj.startCol;
+                let allInputsFilled = true;
+
+                for (let i = 0; i < wordObj.word.length; i++) {
+                    const cell = getCell(currentRow, currentCol);
+                    const input = cell ? cell.querySelector('input') : null;
+
+                    if (input && input.value) {
+                        currentWordEntered += input.value.toUpperCase();
+                    } else {
+                        allInputsFilled = false;
+                        break;
+                    }
+
+                    if (wordObj.direction === "horizontal") {
+                        currentCol++;
+                    } else {
+                        currentRow++;
+                    }
+                }
+
+                if (allInputsFilled) {
+                    const status = wordStatus.get(wordObj.word);
+                    if (currentWordEntered === wordObj.word) {
+                        if (!status.answered) {
+                            status.attempts++; // Incrementa los intentos solo si no estaba respondida
+                            markWordAsCorrect(wordObj);
+                            score += (status.attempts === 1) ? 10 : 5; // 10 puntos por primer intento, 5 por corregir
+                            scoreElement.textContent = score;
+                            correctAnswersCount++;
+                            status.answered = true; // Marca como respondida
+                            showFeedback("¡Correcto! Sigue así.", "correct");
+                            checkRewards();
+                        } else {
+                            // Ya estaba respondida, solo asegurar el color
+                            markWordAsCorrect(wordObj);
+                        }
+                    } else {
+                        // Incorrecta
+                        status.attempts++; // Incrementa intentos en fallo también
+                        showFeedback(`¡Incorrecto! Pista: ${feedbackMessages[wordObj.word]}`, "incorrect");
+                        markWordAsIncorrect(wordObj); // Marcar temporalmente como incorrecta
+                        setTimeout(() => clearWordHighlight(wordObj), 800); // Quitar el rojo después de un tiempo
+                    }
+                }
+            }
+
+            function markWordAsCorrect(wordObj) {
+                let currentRow = wordObj.startRow;
+                let currentCol = wordObj.startCol;
+                for (let i = 0; i < wordObj.word.length; i++) {
+                    const cell = getCell(currentRow, currentCol);
+                    if (cell) {
+                        cell.classList.add('correct');
+                        cell.classList.remove('incorrect');
+                        const input = cell.querySelector('input');
+                        if (input) input.disabled = true; // Deshabilita el input cuando es correcto
+                    }
+                    if (wordObj.direction === "horizontal") {
+                        currentCol++;
+                    } else {
+                        currentRow++;
+                    }
+                }
+            }
+
+            function markWordAsIncorrect(wordObj) {
+                let currentRow = wordObj.startRow;
+                let currentCol = wordObj.startCol;
+                for (let i = 0; i < wordObj.word.length; i++) {
+                    const cell = getCell(currentRow, currentCol);
+                    if (cell) {
+                        cell.classList.add('incorrect');
+                        cell.classList.remove('correct');
+                    }
+                    if (wordObj.direction === "horizontal") {
+                        currentCol++;
+                    } else {
+                        currentRow++;
+                    }
+                }
+            }
+
+            function clearWordHighlight(wordObj) {
+                let currentRow = wordObj.startRow;
+                let currentCol = wordObj.startCol;
+                for (let i = 0; i < wordObj.word.length; i++) {
+                    const cell = getCell(currentRow, currentCol);
+                    // Solo quitar el rojo si la palabra aún no ha sido respondida correctamente
+                    if (cell && !wordStatus.get(wordObj.word).answered) { 
+                        cell.classList.remove('incorrect');
+                    }
+                    if (wordObj.direction === "horizontal") {
+                        currentCol++;
+                    } else {
+                        currentRow++;
+                    }
+                }
+            }
+
+            function showFeedback(message, type) {
+                feedbackElement.textContent = message;
+                feedbackElement.className = `feedback-message ${type}-feedback`;
+                // Quitar el feedback después de un tiempo
+                setTimeout(() => {
+                    feedbackElement.textContent = '';
+                    feedbackElement.className = 'feedback-message';
+                }, 3000);
+            }
+
+            function checkRewards() {
+                const percentage = (correctAnswersCount / totalElements) * 100;
+
+                if (percentage >= 50 && percentage < 100 && !rewardElement.dataset.reward50Given) {
+                    rewardElement.textContent = rewards[50];
+                    rewardElement.style.display = 'block';
+                    rewardElement.dataset.reward50Given = 'true'; // Para que solo se dé una vez
+                    setTimeout(() => rewardElement.style.display = 'none', 5000);
+                } else if (percentage === 100 && !rewardElement.dataset.reward100Given) {
+                    rewardElement.textContent = rewards[100];
+                    rewardElement.style.display = 'block';
+                    rewardElement.dataset.reward100Given = 'true';
+                    
+                    // Check for "No Errors" achievement
+                    let allFirstAttemptCorrect = true;
+                    wordStatus.forEach(status => {
+                        if (status.attempts > 1 && status.answered) { // Si hubo más de un intento y fue respondida correctamente
+                            allFirstAttemptCorrect = false;
+                        }
+                    });
+
+                    if (allFirstAttemptCorrect) {
+                        setTimeout(() => {
+                            rewardElement.textContent = rewards.noErrors;
+                            rewardElement.style.display = 'block';
+                        }, 6000); // Muestra el mensaje de no errores después del de 100%
+                    } else {
+                         setTimeout(() => rewardElement.style.display = 'none', 5000);
+                    }
+                }
+            }
+
+            function highlightClue(wordObj) {
+                // Primero, limpia cualquier resaltado anterior
+                clearHighlightClues();
+
+                // Resalta la pista en la lista
+                const clueLi = document.querySelector(`li[data-word-number="${wordObj.number}"]`);
+                if (clueLi) {
+                    clueLi.classList.add('active-clue');
+                }
+
+                // Resalta las celdas de la palabra en la cuadrícula
+                let currentRow = wordObj.startRow;
+                let currentCol = wordObj.startCol;
+                for (let i = 0; i < wordObj.word.length; i++) {
+                    const cell = getCell(currentRow, currentCol);
+                    if (cell) {
+                        // Solo resalta si la celda no está ya correcta (verde)
+                        if (!cell.classList.contains('correct') && !cell.classList.contains('incorrect')) {
+                             cell.style.backgroundColor = 'rgba(103, 58, 183, 0.2)'; /* Un morado translúcido */
+                        }
+                       
+                    }
+                    if (wordObj.direction === "horizontal") {
+                        currentCol++;
+                    } else {
+                        currentRow++;
+                    }
+                }
+            }
+
+            function clearHighlightClues() {
+                document.querySelectorAll('.active-clue').forEach(li => {
+                    li.classList.remove('active-clue');
+                });
+                document.querySelectorAll('.grid-cell').forEach(cell => {
+                    // Asegúrate de no quitar el color de las celdas ya correctas/incorrectas
+                    if (!cell.classList.contains('correct') && !cell.classList.contains('incorrect')) {
+                         cell.style.backgroundColor = 'var(--color-grid-empty)';
+                    }
+                });
+            }
+
+            function focusWord(wordObj) {
+                // Encuentra el primer input de la palabra y enfócalo
+                const firstCell = getCell(wordObj.startRow, wordObj.startCol);
+                if (firstCell && firstCell.querySelector('input')) {
+                    firstCell.querySelector('input').focus();
+                }
+            }
+
+            // --- Inicialización del Juego ---
+            createGrid();
+            displayClues();
+        });
+    </script>
+</body>
+</html>
